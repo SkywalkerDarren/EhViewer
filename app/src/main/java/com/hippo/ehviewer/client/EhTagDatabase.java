@@ -16,10 +16,13 @@
 
 package com.hippo.ehviewer.client;
 
-import android.support.annotation.Nullable;
+import android.content.Context;
 import android.util.Base64;
+import androidx.annotation.Nullable;
 import com.hippo.ehviewer.AppConfig;
 import com.hippo.ehviewer.EhApplication;
+import com.hippo.ehviewer.R;
+import com.hippo.util.ExceptionUtils;
 import com.hippo.util.IoThreadPoolExecutor;
 import com.hippo.util.TextUrl;
 import com.hippo.yorozuya.FileUtils;
@@ -33,7 +36,6 @@ import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -125,13 +127,6 @@ public class EhTagDatabase {
   }
 
 
-  private static final String[] METADATA_ZH_CN = new String[] {
-      "tag-translations-zh-rCN.sha1",
-      "https://github.com/seven332/EhViewer/raw/tag-translations/tag-translations/tag-translations-zh-rCN.sha1",
-      "tag-translations-zh-rCN",
-      "https://github.com/seven332/EhViewer/raw/tag-translations/tag-translations/tag-translations-zh-rCN",
-  };
-
   private static final Map<String, String> NAMESPACE_TO_PREFIX = new HashMap<>();
 
   static {
@@ -151,8 +146,13 @@ public class EhTagDatabase {
   private static Lock lock = new ReentrantLock();
 
   @Nullable
-  public static EhTagDatabase getInstance() {
-    return instance;
+  public static EhTagDatabase getInstance(Context context) {
+    if (isPossible(context)) {
+      return instance;
+    } else {
+      instance = null;
+      return null;
+    }
   }
 
   @Nullable
@@ -160,16 +160,17 @@ public class EhTagDatabase {
     return NAMESPACE_TO_PREFIX.get(namespace);
   }
 
-  private static String[] getMetadata() {
-    Locale locale = Locale.getDefault();
-    if ("zh".equals(locale.getLanguage()) && "CN".equals(locale.getCountry())) {
-      return METADATA_ZH_CN;
+  private static String[] getMetadata(Context context) {
+    String[] metadata = context.getResources().getStringArray(R.array.tag_translation_metadata);
+    if (metadata.length == 4) {
+      return metadata;
+    } else {
+      return null;
     }
-    return null;
   }
 
-  public static boolean isPossible() {
-    return getMetadata() != null;
+  public static boolean isPossible(Context context) {
+    return getMetadata(context) != null;
   }
 
   @Nullable
@@ -252,13 +253,14 @@ public class EhTagDatabase {
       }
 
       return true;
-    } catch (IOException e) {
+    } catch (Throwable t) {
+      ExceptionUtils.throwIfFatal(t);
       return false;
     }
   }
 
-  public static void update() {
-    String[] urls = getMetadata();
+  public static void update(Context context) {
+    String[] urls = getMetadata(context);
     if (urls == null || urls.length != 4) {
       // Clear tags if it's not possible
       instance = null;

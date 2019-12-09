@@ -21,18 +21,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.DividerItemDecoration;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -45,11 +39,22 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.Toolbar;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.PointTarget;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.annotation.Implemented;
+import com.hippo.app.EditTextDialogBuilder;
+import com.hippo.drawable.AddDeleteDrawable;
 import com.hippo.drawable.DrawerArrowDrawable;
 import com.hippo.easyrecyclerview.EasyRecyclerView;
 import com.hippo.easyrecyclerview.FastScroller;
@@ -69,12 +74,13 @@ import com.hippo.ehviewer.ui.annotation.DrawerLifeCircle;
 import com.hippo.ehviewer.ui.annotation.ViewLifeCircle;
 import com.hippo.ehviewer.ui.annotation.WholeLifeCircle;
 import com.hippo.ehviewer.widget.EhDrawerLayout;
+import com.hippo.ehviewer.widget.GalleryInfoContentHelper;
 import com.hippo.ehviewer.widget.SearchBar;
 import com.hippo.refreshlayout.RefreshLayout;
 import com.hippo.ripple.Ripple;
 import com.hippo.scene.Announcer;
 import com.hippo.scene.SceneFragment;
-import com.hippo.util.ApiHelper;
+import com.hippo.util.AppHelper;
 import com.hippo.util.DrawableManager;
 import com.hippo.widget.ContentLayout;
 import com.hippo.widget.FabLayout;
@@ -91,7 +97,8 @@ import java.util.List;
 public class FavoritesScene extends BaseScene implements
         EasyRecyclerView.OnItemClickListener, EasyRecyclerView.OnItemLongClickListener,
         FastScroller.OnDragHandlerListener, SearchBarMover.Helper, SearchBar.Helper,
-        FabLayout.OnClickFabListener, EasyRecyclerView.CustomChoiceListener {
+        FabLayout.OnClickFabListener, FabLayout.OnExpandListener,
+        EasyRecyclerView.CustomChoiceListener {
 
     private static final long ANIMATE_TIME = 300L;
 
@@ -122,6 +129,7 @@ public class FavoritesScene extends BaseScene implements
     @Nullable
     @ViewLifeCircle
     private DrawerArrowDrawable mLeftDrawable;
+    private AddDeleteDrawable mActionFabDrawable;
 
     @Nullable
     private EhDrawerLayout mDrawerLayout;
@@ -258,9 +266,8 @@ public class FavoritesScene extends BaseScene implements
         contentLayout.getFastScroller().setOnDragHandlerListener(this);
 
         mAdapter = new FavoritesAdapter(inflater, resources, mRecyclerView, Settings.getListMode());
-        mRecyclerView.setSelector(Ripple.generateRippleDrawable(context, !AttrResources.getAttrBoolean(context, R.attr.isLightTheme)));
+        mRecyclerView.setSelector(Ripple.generateRippleDrawable(context, !AttrResources.getAttrBoolean(context, R.attr.isLightTheme), new ColorDrawable(Color.TRANSPARENT)));
         mRecyclerView.setDrawSelectorOnTop(true);
-        mRecyclerView.hasFixedSize();
         mRecyclerView.setClipToPadding(false);
         mRecyclerView.setOnItemClickListener(this);
         mRecyclerView.setOnItemLongClickListener(this);
@@ -280,10 +287,13 @@ public class FavoritesScene extends BaseScene implements
         updateSearchBar();
         mSearchBarMover = new SearchBarMover(this, mSearchBar, mRecyclerView);
 
+        mActionFabDrawable = new AddDeleteDrawable(context, resources.getColor(R.color.primary_drawable_dark));
+        mFabLayout.getPrimaryFab().setImageDrawable(mActionFabDrawable);
         mFabLayout.setExpanded(false, false);
-        mFabLayout.setAutoCancel(false);
-        mFabLayout.setHidePrimaryFab(true);
+        mFabLayout.setAutoCancel(true);
+        mFabLayout.setHidePrimaryFab(false);
         mFabLayout.setOnClickFabListener(this);
+        mFabLayout.setOnExpandListener(this);
         addAboveSnackView(mFabLayout);
 
         // Restore search mode
@@ -391,6 +401,7 @@ public class FavoritesScene extends BaseScene implements
         }
 
         if (null != mHelper) {
+            mHelper.destroy();
             if (1 == mHelper.getShownViewIndex()) {
                 mHasFirstRefresh = false;
             }
@@ -540,6 +551,8 @@ public class FavoritesScene extends BaseScene implements
 
         if (mRecyclerView != null && mRecyclerView.isInCustomChoice()) {
             mRecyclerView.outOfCustomChoiceMode();
+        } else if (mFabLayout != null && mFabLayout.isExpanded()) {
+            mFabLayout.toggle();
         } else if (mSearchMode) {
             exitSearchMode(true);
         } else {
@@ -615,7 +628,7 @@ public class FavoritesScene extends BaseScene implements
                 args.putParcelable(GalleryDetailScene.KEY_GALLERY_INFO, gi);
                 Announcer announcer = new Announcer(GalleryDetailScene.class).setArgs(args);
                 View thumb;
-                if (ApiHelper.SUPPORT_TRANSITION && null != (thumb = view.findViewById(R.id.thumb))) {
+                if (null != (thumb = view.findViewById(R.id.thumb))) {
                     announcer.setTranHelper(new EnterGalleryDetailTransaction(thumb));
                 }
                 startScene(announcer);
@@ -736,18 +749,85 @@ public class FavoritesScene extends BaseScene implements
     }
 
     @Override
+    public void onExpand(boolean expanded) {
+        if (expanded) {
+            mActionFabDrawable.setDelete(ANIMATE_TIME);
+        } else {
+            mActionFabDrawable.setAdd(ANIMATE_TIME);
+        }
+    }
+
+    @Override
     @Implemented(FabLayout.OnClickFabListener.class)
     public void onClickPrimaryFab(FabLayout view, FloatingActionButton fab) {
-        if (mRecyclerView != null) {
-            mRecyclerView.outOfCustomChoiceMode();
+        if (mRecyclerView != null && mFabLayout != null) {
+            if (mRecyclerView.isInCustomChoice()) {
+                mRecyclerView.outOfCustomChoiceMode();
+            } else {
+                mFabLayout.toggle();
+            }
         }
+    }
+
+    private void showGoToDialog() {
+        Context context = getContext2();
+        if (null == context || null == mHelper) {
+            return;
+        }
+
+        final int page = mHelper.getPageForTop();
+        final int pages = mHelper.getPages();
+        String hint = getString(R.string.go_to_hint, page + 1, pages);
+        final EditTextDialogBuilder builder = new EditTextDialogBuilder(context, null, hint);
+        builder.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        final AlertDialog dialog = builder.setTitle(R.string.go_to)
+            .setPositiveButton(android.R.string.ok, null)
+            .show();
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
+            if (null == mHelper) {
+                dialog.dismiss();
+                return;
+            }
+
+            String text = builder.getText().trim();
+            int goTo;
+            try {
+                goTo = Integer.parseInt(text) - 1;
+            } catch (NumberFormatException e){
+                builder.setError(getString(R.string.error_invalid_number));
+                return;
+            }
+            if (goTo < 0 || goTo >= pages) {
+                builder.setError(getString(R.string.error_out_of_range));
+                return;
+            }
+            builder.setError(null);
+            mHelper.goTo(goTo);
+            AppHelper.hideSoftInput(dialog);
+            dialog.dismiss();
+        });
     }
 
     @Override
     @Implemented(FabLayout.OnClickFabListener.class)
     public void onClickSecondaryFab(FabLayout view, FloatingActionButton fab, int position) {
         Context context = getContext2();
-        if (null == context || null == mRecyclerView || null == mHelper || !mRecyclerView.isInCustomChoice()) {
+        if (null == context || null == mRecyclerView || null == mHelper) {
+            return;
+        }
+
+        if (!mRecyclerView.isInCustomChoice()) {
+            switch (position) {
+                case 0: // Go to
+                    if (mHelper.canGoTo()) {
+                        showGoToDialog();
+                    }
+                    break;
+                case 1: // Refresh
+                    mHelper.refresh();
+                    break;
+            }
+            view.setExpanded(false);
             return;
         }
 
@@ -763,7 +843,7 @@ public class FavoritesScene extends BaseScene implements
         }
 
         switch (position) {
-            case 0: { // Download
+            case 2: { // Download
                 Activity activity = getActivity2();
                 if (activity != null) {
                     CommonOperations.startDownload(getActivity2(), mModifyGiList, false);
@@ -774,7 +854,7 @@ public class FavoritesScene extends BaseScene implements
                 }
                 break;
             }
-            case 1: { // Delete
+            case 3: { // Delete
                 DeleteDialogHelper helper = new DeleteDialogHelper();
                 new AlertDialog.Builder(context)
                         .setTitle(R.string.delete_favorites_dialog_title)
@@ -784,7 +864,7 @@ public class FavoritesScene extends BaseScene implements
                         .show();
                 break;
             }
-            case 2: { // Move
+            case 4: { // Move
                 MoveDialogHelper helper = new MoveDialogHelper();
                 // First is local favorite, the other 10 is cloud favorite
                 String[] array = new String[11];
@@ -800,11 +880,45 @@ public class FavoritesScene extends BaseScene implements
         }
     }
 
+    private Runnable showNormalFabsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mFabLayout != null) {
+                mFabLayout.setSecondaryFabVisibilityAt(0, true);
+                mFabLayout.setSecondaryFabVisibilityAt(1, true);
+                mFabLayout.setSecondaryFabVisibilityAt(2, false);
+                mFabLayout.setSecondaryFabVisibilityAt(3, false);
+                mFabLayout.setSecondaryFabVisibilityAt(4, false);
+            }
+        }
+    };
+
+    private void showNormalFabs() {
+        // Delay showing normal fabs to avoid mutation
+        SimpleHandler.getInstance().removeCallbacks(showNormalFabsRunnable);
+        SimpleHandler.getInstance().postDelayed(showNormalFabsRunnable, 300);
+    }
+
+    private void showSelectionFabs() {
+        SimpleHandler.getInstance().removeCallbacks(showNormalFabsRunnable);
+
+        if (mFabLayout != null) {
+            mFabLayout.setSecondaryFabVisibilityAt(0, false);
+            mFabLayout.setSecondaryFabVisibilityAt(1, false);
+            mFabLayout.setSecondaryFabVisibilityAt(2, true);
+            mFabLayout.setSecondaryFabVisibilityAt(3, true);
+            mFabLayout.setSecondaryFabVisibilityAt(4, true);
+        }
+    }
+
     @Override
     @Implemented(EasyRecyclerView.CustomChoiceListener.class)
     public void onIntoCustomChoice(EasyRecyclerView view) {
         if (mFabLayout != null) {
-            mFabLayout.setExpanded(true);
+            showSelectionFabs();
+            mFabLayout.setAutoCancel(false);
+            // Delay expanding action to make layout work fine
+            SimpleHandler.getInstance().post(() -> mFabLayout.setExpanded(true));
         }
         if (mHelper != null) {
             mHelper.setRefreshLayoutEnable(false);
@@ -818,6 +932,8 @@ public class FavoritesScene extends BaseScene implements
     @Implemented(EasyRecyclerView.CustomChoiceListener.class)
     public void onOutOfCustomChoice(EasyRecyclerView view) {
         if (mFabLayout != null) {
+            showNormalFabs();
+            mFabLayout.setAutoCancel(true);
             mFabLayout.setExpanded(false);
         }
         if (mHelper != null) {
@@ -874,8 +990,7 @@ public class FavoritesScene extends BaseScene implements
             }
 
             updateSearchBar();
-            mHelper.setPages(taskId, result.pages);
-            mHelper.onGetPageData(taskId, result.galleryInfoList);
+            mHelper.onGetPageData(taskId, result.pages, result.nextPage, result.galleryInfoList);
 
             if (mDrawerAdapter != null) {
                 mDrawerAdapter.notifyDataSetChanged();
@@ -901,11 +1016,9 @@ public class FavoritesScene extends BaseScene implements
             }
 
             if (list.size() == 0) {
-                mHelper.setPages(taskId, 0);
-                mHelper.onGetPageData(taskId, Collections.EMPTY_LIST);
+                mHelper.onGetPageData(taskId, 0, 0, Collections.EMPTY_LIST);
             } else {
-                mHelper.setPages(taskId, 1);
-                mHelper.onGetPageData(taskId, list);
+                mHelper.onGetPageData(taskId, 1, 0, list);
             }
 
             if (TextUtils.isEmpty(keyword)) {
@@ -1009,7 +1122,7 @@ public class FavoritesScene extends BaseScene implements
 
         public FavoritesAdapter(@NonNull LayoutInflater inflater, @NonNull Resources resources,
                 @NonNull RecyclerView recyclerView, int type) {
-            super(inflater, resources, recyclerView, type);
+            super(inflater, resources, recyclerView, type, false);
         }
 
         @Override
@@ -1024,7 +1137,7 @@ public class FavoritesScene extends BaseScene implements
         }
     }
 
-    private class FavoritesHelper extends ContentLayout.ContentHelper<GalleryInfo> {
+    private class FavoritesHelper extends GalleryInfoContentHelper {
 
         @Override
         protected void getPageData(final int taskId, int type, int page) {
@@ -1137,6 +1250,11 @@ public class FavoritesScene extends BaseScene implements
             if (null != mSearchBarMover) {
                 mSearchBarMover.showSearchBar();
             }
+        }
+
+        @Override
+        protected boolean isDuplicate(GalleryInfo d1, GalleryInfo d2) {
+            return d1.gid == d2.gid;
         }
 
         @Override

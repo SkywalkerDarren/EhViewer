@@ -20,14 +20,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.preference.PreferenceManager;
-import android.support.annotation.DimenRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.Log;
+import androidx.annotation.DimenRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.hippo.ehviewer.client.EhConfig;
 import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.client.data.FavListUrlBuilder;
 import com.hippo.ehviewer.ui.CommonOperations;
+import com.hippo.ehviewer.ui.scene.GalleryListScene;
 import com.hippo.glgallery.GalleryView;
 import com.hippo.unifile.UniFile;
 import com.hippo.util.ExceptionUtils;
@@ -36,6 +37,7 @@ import com.hippo.yorozuya.FileUtils;
 import com.hippo.yorozuya.MathUtils;
 import com.hippo.yorozuya.NumberUtils;
 import java.io.File;
+import java.util.Locale;
 
 public class Settings {
 
@@ -49,6 +51,16 @@ public class Settings {
         sContext = context.getApplicationContext();
         sSettingsPre = PreferenceManager.getDefaultSharedPreferences(sContext);
         sEhConfig = loadEhConfig();
+        fixDefaultValue(context);
+    }
+
+    private static void fixDefaultValue(Context context) {
+        // Enable builtin hosts if the country is CN
+        if (!sSettingsPre.contains(KEY_BUILT_IN_HOSTS)) {
+            if ("CN".equals(Locale.getDefault().getCountry())) {
+                putBuiltInHosts(true);
+            }
+        }
     }
 
     private static EhConfig loadEhConfig() {
@@ -250,7 +262,7 @@ public class Settings {
     }
 
     public static final String KEY_APPLY_NAV_BAR_THEME_COLOR = "apply_nav_bar_theme_color";
-    private static final boolean DEFAULT_APPLY_NAV_BAR_THEME_COLOR = false;
+    private static final boolean DEFAULT_APPLY_NAV_BAR_THEME_COLOR = true;
 
     public static boolean getApplyNavBarThemeColor() {
         return getBoolean(KEY_APPLY_NAV_BAR_THEME_COLOR, DEFAULT_APPLY_NAV_BAR_THEME_COLOR);
@@ -265,6 +277,22 @@ public class Settings {
 
     public static void putGallerySite(int value) {
         putIntToStr(KEY_GALLERY_SITE, value);
+    }
+
+    private static final String KEY_LAUNCH_PAGE = "launch_page";
+    private static final int DEFAULT_LAUNCH_PAGE = 0;
+
+    public static String getLaunchPageGalleryListSceneAction() {
+        int value = getIntFromStr(KEY_LAUNCH_PAGE, DEFAULT_LAUNCH_PAGE);
+        switch (value) {
+            default:
+            case 0:
+                return GalleryListScene.ACTION_HOMEPAGE;
+            case 1:
+                return GalleryListScene.ACTION_SUBSCRIPTION;
+            case 2:
+                return GalleryListScene.ACTION_WHATS_HOT;
+        }
     }
 
     public static final String KEY_LIST_MODE = "list_mode";
@@ -384,72 +412,6 @@ public class Settings {
         sEhConfig.excludedLanguages = value;
         sEhConfig.setDirty();
         putString(KEY_EXCLUDED_LANGUAGES, value);
-    }
-
-    private static final String KEY_HATH_PROXY = "hath_proxy";
-    private static final boolean DEFAULT_HATH_PROXY = false;
-
-    public static boolean getHathProxy() {
-        return getBoolean(KEY_HATH_PROXY, DEFAULT_HATH_PROXY);
-    }
-
-    public static void putHathProxy(boolean value) {
-        if (value) {
-            sEhConfig.hahClientIp = Settings.getHathIp();
-            sEhConfig.hahClientPort = Settings.getHathPort();
-            sEhConfig.hahClientPasskey = Settings.getHathPasskey();
-        } else {
-            sEhConfig.hahClientIp = DEFAULT_HATH_IP;
-            sEhConfig.hahClientPort = DEFAULT_HATH_PORT;
-            sEhConfig.hahClientPasskey = DEFAULT_HATH_PASSKEY;
-        }
-        sEhConfig.setDirty();
-        putBoolean(KEY_HATH_PROXY, value);
-    }
-
-    private static final String KEY_HATH_IP = "hath_ip";
-    private static final String DEFAULT_HATH_IP = null;
-
-    public static String getHathIp() {
-        return getString(KEY_HATH_IP, DEFAULT_HATH_IP);
-    }
-
-    public static void putHathIp(String value) {
-        if (Settings.getHathProxy()) {
-            sEhConfig.hahClientIp = value;
-            sEhConfig.setDirty();
-        }
-        putString(KEY_HATH_IP, value);
-    }
-
-    private static final String KEY_HATH_PORT = "hath_port";
-    private static final int DEFAULT_HATH_PORT = -1;
-
-    public static int getHathPort() {
-        return getInt(KEY_HATH_PORT, DEFAULT_HATH_PORT);
-    }
-
-    public static void putHathPort(int value) {
-        if (Settings.getHathProxy()) {
-            sEhConfig.hahClientPort = value;
-            sEhConfig.setDirty();
-        }
-        putInt(KEY_HATH_PORT, value);
-    }
-
-    private static final String KEY_HATH_PASSKEY = "hath_passkey";
-    private static final String DEFAULT_HATH_PASSKEY = null;
-
-    public static String getHathPasskey() {
-        return getString(KEY_HATH_PASSKEY, DEFAULT_HATH_PASSKEY);
-    }
-
-    public static void putHathPasskey(String value) {
-        if (Settings.getHathProxy()) {
-            sEhConfig.hahClientPasskey = value;
-            sEhConfig.setDirty();
-        }
-        putString(KEY_HATH_PASSKEY, value);
     }
 
     private static final String KEY_CELLULAR_NETWORK_WARNING = "cellular_network_warning";
@@ -1016,6 +978,13 @@ public class Settings {
         putBoolean(KEY_SAVE_PARSE_ERROR_BODY, value);
     }
 
+    private static final String KEY_SAVE_CRASH_LOG = "save_crash_log";
+    private static final boolean DEFAULT_SAVE_CRASH_LOG = false;
+
+    public static boolean getSaveCrashLog() {
+        return getBoolean(KEY_SAVE_CRASH_LOG, DEFAULT_SAVE_CRASH_LOG);
+    }
+
     public static final String KEY_SECURITY = "security";
     public static final String DEFAULT_SECURITY = "";
 
@@ -1064,6 +1033,39 @@ public class Settings {
 
     public static void putAppLanguage(String value) {
         putString(KEY_APP_LANGUAGE, value);
+    }
+
+    private static final String KEY_PROXY_TYPE = "proxy_type";
+    private static final int DEFAULT_PROXY_TYPE = EhProxySelector.TYPE_SYSTEM;
+
+    public static int getProxyType() {
+        return getInt(KEY_PROXY_TYPE, DEFAULT_PROXY_TYPE);
+    }
+
+    public static void putProxyType(int value) {
+        putInt(KEY_PROXY_TYPE, value);
+    }
+
+    private static final String KEY_PROXY_IP = "proxy_ip";
+    private static final String DEFAULT_PROXY_IP = null;
+
+    public static String getProxyIp() {
+        return getString(KEY_PROXY_IP, DEFAULT_PROXY_IP);
+    }
+
+    public static void putProxyIp(String value) {
+        putString(KEY_PROXY_IP, value);
+    }
+
+    private static final String KEY_PROXY_PORT = "proxy_port";
+    private static final int DEFAULT_PROXY_PORT = -1;
+
+    public static int getProxyPort() {
+        return getInt(KEY_PROXY_PORT, DEFAULT_PROXY_PORT);
+    }
+
+    public static void putProxyPort(int value) {
+        putInt(KEY_PROXY_PORT, value);
     }
 
     /********************

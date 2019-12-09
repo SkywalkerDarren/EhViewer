@@ -20,7 +20,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +27,7 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.annotation.Nullable;
 import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.client.EhCookieStore;
 import com.hippo.ehviewer.client.EhUrl;
@@ -132,23 +132,18 @@ public class WebViewSignInScene extends SolidScene {
                 return;
             }
 
-            String cookieString = CookieManager.getInstance().getCookie(url);
+            String cookieString = CookieManager.getInstance().getCookie(EhUrl.HOST_E);
             List<Cookie> cookies = parseCookies(httpUrl, cookieString);
             boolean getId = false;
             boolean getHash = false;
             for (Cookie cookie: cookies) {
                 if (EhCookieStore.KEY_IPD_MEMBER_ID.equals(cookie.name())) {
                     getId = true;
-                    addCookie(context, EhUrl.DOMAIN_EX, cookie);
-                    addCookie(context, EhUrl.DOMAIN_E, cookie);
                 } else if (EhCookieStore.KEY_IPD_PASS_HASH.equals(cookie.name())) {
                     getHash = true;
-                    addCookie(context, EhUrl.DOMAIN_EX, cookie);
-                    addCookie(context, EhUrl.DOMAIN_E, cookie);
-                } else if (EhCookieStore.KEY_IGNEOUS.equals(cookie.name())) {
-                    addCookie(context, EhUrl.DOMAIN_EX, cookie);
-                    addCookie(context, EhUrl.DOMAIN_E, cookie);
                 }
+                addCookie(context, EhUrl.DOMAIN_EX, cookie);
+                addCookie(context, EhUrl.DOMAIN_E, cookie);
             }
 
             if (getId && getHash) {

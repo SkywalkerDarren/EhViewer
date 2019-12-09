@@ -20,12 +20,12 @@ import android.animation.Animator;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import androidx.annotation.NonNull;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.ehviewer.R;
 import com.hippo.yorozuya.AnimationUtils;
 import com.hippo.yorozuya.AssertUtils;
@@ -103,6 +103,19 @@ public class FabLayout extends ViewGroup implements View.OnClickListener {
             return null;
         }
         return (FloatingActionButton) getChildAt(index);
+    }
+
+    public void setSecondaryFabVisibilityAt(int index, boolean visible) {
+        View fab = getSecondaryFabAt(index);
+        if (fab != null) {
+            if (visible && fab.getVisibility() == View.GONE) {
+                fab.animate().cancel();
+                fab.setVisibility(mExpanded ? View.VISIBLE : View.INVISIBLE);
+            } else if (!visible && fab.getVisibility() != View.GONE) {
+                fab.animate().cancel();
+                fab.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override
@@ -230,6 +243,9 @@ public class FabLayout extends ViewGroup implements View.OnClickListener {
                     int checkCount = mHidePrimaryFab ? count : count - 1;
                     for (int i = 0; i < checkCount; i++) {
                         View child = getChildAt(i);
+                        if (child.getVisibility() == GONE) {
+                            continue;
+                        }
                         child.setVisibility(expanded ? View.VISIBLE : View.INVISIBLE);
                         if (expanded) {
                             child.setAlpha(1f);
@@ -242,6 +258,9 @@ public class FabLayout extends ViewGroup implements View.OnClickListener {
 
                     for (int i = 0; i < count - 1; i++) {
                         View child = getChildAt(i);
+                        if (child.getVisibility() == GONE) {
+                            continue;
+                        }
                         setSecondaryFabAnimation(child, expanded, expanded);
                     }
                 }

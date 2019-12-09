@@ -19,18 +19,21 @@ package com.hippo.ehviewer.ui.scene;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.animator.SwipeDismissItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.swipeable.RecyclerViewSwipeManager;
@@ -59,7 +62,6 @@ import com.hippo.ehviewer.widget.SimpleRatingView;
 import com.hippo.ripple.Ripple;
 import com.hippo.scene.Announcer;
 import com.hippo.scene.SceneFragment;
-import com.hippo.util.ApiHelper;
 import com.hippo.util.DrawableManager;
 import com.hippo.view.ViewTransition;
 import com.hippo.widget.LoadImageView;
@@ -124,9 +126,8 @@ public class HistoryScene extends ToolbarScene
         layoutManager.setColumnSize(resources.getDimensionPixelOffset(Settings.getDetailSizeResId()));
         layoutManager.setStrategy(AutoStaggeredGridLayoutManager.STRATEGY_MIN_SIZE);
         mRecyclerView.setLayoutManager(layoutManager);
-        mRecyclerView.setSelector(Ripple.generateRippleDrawable(context, !AttrResources.getAttrBoolean(context, R.attr.isLightTheme)));
+        mRecyclerView.setSelector(Ripple.generateRippleDrawable(context, !AttrResources.getAttrBoolean(context, R.attr.isLightTheme), new ColorDrawable(Color.TRANSPARENT)));
         mRecyclerView.setDrawSelectorOnTop(true);
-        mRecyclerView.hasFixedSize();
         mRecyclerView.setClipToPadding(false);
         mRecyclerView.setOnItemClickListener(this);
         mRecyclerView.setOnItemLongClickListener(this);
@@ -255,7 +256,7 @@ public class HistoryScene extends ToolbarScene
         args.putParcelable(GalleryDetailScene.KEY_GALLERY_INFO, mLazyList.get(position));
         Announcer announcer = new Announcer(GalleryDetailScene.class).setArgs(args);
         View thumb;
-        if (ApiHelper.SUPPORT_TRANSITION && null != (thumb = view.findViewById(R.id.thumb))) {
+        if (null != (thumb = view.findViewById(R.id.thumb))) {
             announcer.setTranHelper(new EnterGalleryDetailTransaction(thumb));
         }
         startScene(announcer);
@@ -381,7 +382,7 @@ public class HistoryScene extends ToolbarScene
             // Update transition name
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 long gid = gi.gid;
-                holder.thumb.setTransitionName(TransitionNameFactory.getThumbTransitionName(gid));
+                ViewCompat.setTransitionName(holder.thumb, TransitionNameFactory.getThumbTransitionName(gid));
             }
         }
 
@@ -450,7 +451,7 @@ public class HistoryScene extends ToolbarScene
 
         @Override
         public void onFailure(Exception e) {
-            showTip(R.string.add_to_favorite_failure, LENGTH_SHORT);
+            showTip(R.string.add_to_favorite_failure, LENGTH_LONG);
         }
 
         @Override

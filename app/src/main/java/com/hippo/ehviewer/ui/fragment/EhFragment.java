@@ -41,6 +41,7 @@ public class EhFragment extends PreferenceFragment
         Preference detailSize = findPreference(Settings.KEY_DETAIL_SIZE);
         Preference thumbSize = findPreference(Settings.KEY_THUMB_SIZE);
         Preference showTagTranslations = findPreference(Settings.KEY_SHOW_TAG_TRANSLATIONS);
+        Preference tagTranslationsSource = findPreference("tag_translations_source");
 
         theme.setOnPreferenceChangeListener(this);
         applyNavBarThemeColor.setOnPreferenceChangeListener(this);
@@ -54,8 +55,9 @@ public class EhFragment extends PreferenceFragment
             getPreferenceScreen().removePreference(applyNavBarThemeColor);
         }
 
-        if (!EhTagDatabase.isPossible()) {
+        if (!EhTagDatabase.isPossible(getActivity())) {
             getPreferenceScreen().removePreference(showTagTranslations);
+            getPreferenceScreen().removePreference(tagTranslationsSource);
         }
     }
 
@@ -80,7 +82,7 @@ public class EhFragment extends PreferenceFragment
             getActivity().setResult(Activity.RESULT_OK);
         } else if (Settings.KEY_SHOW_TAG_TRANSLATIONS.equals(key)) {
             if (Boolean.TRUE.equals(newValue)) {
-                EhTagDatabase.update();
+                EhTagDatabase.update(getActivity());
             }
         }
         return true;

@@ -20,11 +20,6 @@ import android.content.DialogInterface;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.design.widget.TextInputLayout;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -34,7 +29,11 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
-
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.textfield.TextInputLayout;
 import com.hippo.easyrecyclerview.EasyRecyclerView;
 import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.client.EhFilter;
@@ -42,7 +41,6 @@ import com.hippo.ehviewer.dao.Filter;
 import com.hippo.util.DrawableManager;
 import com.hippo.view.ViewTransition;
 import com.hippo.yorozuya.ViewUtils;
-
 import java.util.List;
 
 public class FilterActivity extends ToolbarActivity {
@@ -147,36 +145,18 @@ public class FilterActivity extends ToolbarActivity {
     }
 
     private void showDeleteFilterDialog(final Filter filter) {
-        int messageId;
-        switch (filter.mode) {
-            case EhFilter.MODE_TITLE:
-                messageId = R.string.delete_title_filter;
-                break;
-            case EhFilter.MODE_UPLOADER:
-                messageId = R.string.delete_uploader_filter;
-                break;
-            case EhFilter.MODE_TAG:
-                messageId = R.string.delete_tag_filter;
-                break;
-            default:
-                messageId = R.string.delete_filter;
-        }
-        String message = getString(messageId, filter.text);
-
+        String message = getString(R.string.delete_filter, filter.text);
         new AlertDialog.Builder(this)
                 .setMessage(message)
-                .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (DialogInterface.BUTTON_POSITIVE != which || null == mFilterList) {
-                            return;
-                        }
-                        mFilterList.delete(filter);
-                        if (null != mAdapter) {
-                            mAdapter.notifyDataSetChanged();
-                        }
-                        updateView(true);
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                    if (DialogInterface.BUTTON_POSITIVE != which || null == mFilterList) {
+                        return;
                     }
+                    mFilterList.delete(filter);
+                    if (null != mAdapter) {
+                        mAdapter.notifyDataSetChanged();
+                    }
+                    updateView(true);
                 }).show();
     }
 
@@ -244,7 +224,7 @@ public class FilterActivity extends ToolbarActivity {
         public FilterHolder(View itemView) {
             super(itemView);
             text = (TextView) ViewUtils.$$(itemView, R.id.text);
-            icon = (ImageView) itemView.findViewById(R.id.icon);
+            icon = itemView.findViewById(R.id.icon);
 
             if (null != icon) {
                 icon.setOnClickListener(this);

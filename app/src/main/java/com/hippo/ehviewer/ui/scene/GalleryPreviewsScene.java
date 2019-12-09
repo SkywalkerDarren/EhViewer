@@ -23,17 +23,16 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.RecyclerView;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.RecyclerView;
 import com.hippo.easyrecyclerview.EasyRecyclerView;
 import com.hippo.easyrecyclerview.MarginItemDecoration;
 import com.hippo.ehviewer.EhApplication;
@@ -56,7 +55,6 @@ import com.hippo.widget.recyclerview.AutoGridLayoutManager;
 import com.hippo.yorozuya.AssertUtils;
 import com.hippo.yorozuya.LayoutUtils;
 import com.hippo.yorozuya.ViewUtils;
-
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -332,6 +330,11 @@ public class GalleryPreviewsScene extends ToolbarScene implements EasyRecyclerVi
                 mAdapter.notifyItemRangeInserted(positionStart, itemCount);
             }
         }
+
+        @Override
+        protected boolean isDuplicate(GalleryPreview d1, GalleryPreview d2) {
+            return false;
+        }
     }
 
     private void onGetPreviewSetSuccess(Pair<PreviewSet, Integer> result, int taskId) {
@@ -343,8 +346,7 @@ public class GalleryPreviewsScene extends ToolbarScene implements EasyRecyclerVi
                 list.add(previewSet.getGalleryPreview(mGalleryInfo.gid, i));
             }
 
-            mHelper.setPages(taskId, result.second);
-            mHelper.onGetPageData(taskId, list);
+            mHelper.onGetPageData(taskId, result.second, 0, list);
         }
     }
 
@@ -433,7 +435,7 @@ public class GalleryPreviewsScene extends ToolbarScene implements EasyRecyclerVi
                     mDialog = null;
                 }
             } else {
-                showTip(R.string.error_out_of_range, LENGTH_SHORT);
+                showTip(R.string.error_out_of_range, LENGTH_LONG);
             }
         }
 

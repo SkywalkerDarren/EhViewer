@@ -24,6 +24,12 @@
         android:summary="@string/settings_advanced_save_parse_error_body_summary"
         android:defaultValue="@bool/beta"/>
 
+    <com.hippo.preference.SwitchPreference
+        android:key="save_crash_log"
+        android:title="@string/settings_advanced_save_crash_log"
+        android:summary="@string/settings_advanced_save_crash_log_summary"
+        android:defaultValue="false"/>
+
     <Preference
         android:key="dump_logcat"
         android:title="@string/settings_advanced_dump_logcat"
@@ -49,13 +55,17 @@
         android:defaultValue="160"/>
 
     <com.hippo.preference.ListPreference
-      xmlns:app="http://schemas.android.com/apk/res-auto"
-      android:key="app_language"
-      android:title="@string/settings_advanced_app_language_title"
-      android:summary="%s"
-      app:entries="@array/app_language_entries"
-      app:entryValues="@array/app_language_entry_values"
-      android:defaultValue="system"/>
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:key="app_language"
+        android:title="@string/settings_advanced_app_language_title"
+        android:summary="%s"
+        app:entries="@array/app_language_entries"
+        app:entryValues="@array/app_language_entry_values"
+        android:defaultValue="system"/>
+
+    <com.hippo.ehviewer.preference.ProxyPreference
+        android:key="proxy"
+        android:title="@string/settings_advanced_proxy"/>
 
     <com.hippo.preference.SwitchPreference
         android:key="built_in_hosts"
@@ -70,7 +80,7 @@
         android:summary="@string/settings_advanced_custom_hosts_summary"
         app:activity="com.hippo.ehviewer.ui.HostsActivity"/>
 
-    <Preference
+    <com.hippo.ehviewer.preference.ExportDataPreference
         android:key="export_data"
         android:title="@string/settings_advanced_export_data"
         android:summary="@string/settings_advanced_export_data_summary"/>

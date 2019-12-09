@@ -21,12 +21,12 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
 import android.util.AttributeSet;
-
+import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.customview.view.AbsSavedState;
 import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.R;
 import com.hippo.preference.DialogPreference;
@@ -124,11 +124,11 @@ public abstract class TaskPreference extends DialogPreference {
         super.onRestoreInstanceState(myState.getSuperState());
     }
 
-    private static class SavedState extends BaseSavedState {
+    private static class SavedState extends AbsSavedState {
         int asyncTaskId;
 
         public SavedState(Parcel source) {
-            super(source);
+            super(source, SavedState.class.getClassLoader());
             asyncTaskId = source.readInt();
         }
 
@@ -164,6 +164,10 @@ public abstract class TaskPreference extends DialogPreference {
 
         public Task(@NonNull Context context) {
             mApplication = (EhApplication) context.getApplicationContext();
+        }
+
+        public EhApplication getApplication() {
+            return mApplication;
         }
 
         @Nullable

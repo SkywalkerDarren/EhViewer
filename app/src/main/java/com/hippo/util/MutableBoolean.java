@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Hippo Seven
+ * Copyright 2019 Hippo Seven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package com.hippo.util;
 
-import android.os.Build;
+public class MutableBoolean {
 
-public final class ApiHelper {
+  public boolean value;
 
-    public static final boolean SUPPORT_TRANSITION = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
+  public MutableBoolean(boolean value) {
+    this.value = value;
+  }
 }

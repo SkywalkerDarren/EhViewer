@@ -28,13 +28,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.support.annotation.IdRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.StringRes;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MenuItem;
@@ -43,6 +36,13 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import com.hippo.drawerlayout.DrawerLayout;
 import com.hippo.ehviewer.AppConfig;
 import com.hippo.ehviewer.EhApplication;
@@ -175,7 +175,7 @@ public final class MainActivity extends StageActivity
             return new Announcer(SelectSiteScene.class);
         } else {
             Bundle args = new Bundle();
-            args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_HOMEPAGE);
+            args.putString(GalleryListScene.KEY_ACTION, Settings.getLaunchPageGalleryListSceneAction());
             return new Announcer(GalleryListScene.class).setArgs(args);
         }
     }
@@ -309,7 +309,7 @@ public final class MainActivity extends StageActivity
                     finish();
                 } else {
                     Bundle args = new Bundle();
-                    args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_HOMEPAGE);
+                    args.putString(GalleryListScene.KEY_ACTION, Settings.getLaunchPageGalleryListSceneAction());
                     startScene(processAnnouncer(new Announcer(GalleryListScene.class).setArgs(args)));
                 }
             }
@@ -364,7 +364,7 @@ public final class MainActivity extends StageActivity
             onRestore(savedInstanceState);
         }
 
-        EhTagDatabase.update();
+        EhTagDatabase.update(this);
     }
 
     private String getThemeText() {
@@ -664,7 +664,7 @@ public final class MainActivity extends StageActivity
     public void showTip(CharSequence message, int length) {
         if (null != mDrawerLayout) {
             Snackbar.make(mDrawerLayout, message,
-                    length == BaseScene.LENGTH_LONG ? Snackbar.LENGTH_LONG : Snackbar.LENGTH_SHORT).show();
+                    length == BaseScene.LENGTH_LONG ? 5000 : 3000).show();
         } else {
             Toast.makeText(this, message,
                     length == BaseScene.LENGTH_LONG ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
@@ -693,6 +693,11 @@ public final class MainActivity extends StageActivity
         if (id == R.id.nav_homepage) {
             Bundle args = new Bundle();
             args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_HOMEPAGE);
+            startSceneFirstly(new Announcer(GalleryListScene.class)
+                    .setArgs(args));
+        } else if (id == R.id.nav_subscription) {
+            Bundle args = new Bundle();
+            args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_SUBSCRIPTION);
             startSceneFirstly(new Announcer(GalleryListScene.class)
                     .setArgs(args));
         } else if (id == R.id.nav_whats_hot) {

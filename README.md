@@ -1,3 +1,5 @@
+# DEPRECATED
+
 [![Telegram](https://img.shields.io/badge/chat-Telegram-blue.svg)](https://t.me/ehviewer)
 
 # EhViewer
@@ -31,6 +33,13 @@ Linux
 生成的 apk 文件在 app\build\outputs\apk 目录下
 
 The apk is in app\build\outputs\apk
+
+
+# Download
+
+[下载](https://github.com/seven332/EhViewer/releases)
+
+[Download](https://github.com/seven332/EhViewer/releases)
 
 
 # Thanks

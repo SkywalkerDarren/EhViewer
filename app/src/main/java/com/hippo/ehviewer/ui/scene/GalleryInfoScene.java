@@ -20,20 +20,23 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.easyrecyclerview.EasyRecyclerView;
 import com.hippo.easyrecyclerview.LinearDividerItemDecoration;
 import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.Settings;
+import com.hippo.ehviewer.UrlOpener;
 import com.hippo.ehviewer.client.EhUrl;
 import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.client.data.GalleryDetail;
@@ -48,6 +51,9 @@ public final class GalleryInfoScene extends ToolbarScene implements EasyRecycler
     public static final String KEY_GALLERY_DETAIL = "gallery_detail";
     public static final String KEY_KEYS = "keys";
     public static final String KEY_VALUES = "values";
+
+    private static final int INDEX_URL = 3;
+    private static final int INDEX_PARENT = 10;
 
     /*---------------
      Whole life cycle
@@ -162,14 +168,14 @@ public final class GalleryInfoScene extends ToolbarScene implements EasyRecycler
         mRecyclerView = (EasyRecyclerView) ViewUtils.$$(view, R.id.recycler_view);
         InfoAdapter adapter = new InfoAdapter();
         mRecyclerView.setAdapter(adapter);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
         LinearDividerItemDecoration decoration = new LinearDividerItemDecoration(
                 LinearDividerItemDecoration.VERTICAL,
                 AttrResources.getAttrColor(context, R.attr.dividerColor),
                 LayoutUtils.dp2pix(context, 1));
         decoration.setPadding(context.getResources().getDimensionPixelOffset(R.dimen.keyline_margin));
         mRecyclerView.addItemDecoration(decoration);
-        mRecyclerView.setSelector(Ripple.generateRippleDrawable(context, !AttrResources.getAttrBoolean(context, R.attr.isLightTheme)));
+        mRecyclerView.setSelector(Ripple.generateRippleDrawable(context, !AttrResources.getAttrBoolean(context, R.attr.isLightTheme), new ColorDrawable(Color.TRANSPARENT)));
         mRecyclerView.setClipToPadding(false);
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setOnItemClickListener(this);
@@ -197,15 +203,19 @@ public final class GalleryInfoScene extends ToolbarScene implements EasyRecycler
     public boolean onItemClick(EasyRecyclerView parent, View view, int position, long id) {
         Context context = getContext2();
         if (null != context && 0 != position && null != mValues) {
-            ClipboardManager cmb = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            cmb.setPrimaryClip(ClipData.newPlainText(null, mValues.get(position)));
+            if (position == INDEX_PARENT) {
+                UrlOpener.openUrl(context, mValues.get(position), true);
+            } else {
+                ClipboardManager cmb = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                cmb.setPrimaryClip(ClipData.newPlainText(null, mValues.get(position)));
 
-            if (position == 3) {
-                // Save it to avoid detect the gallery
-                Settings.putClipboardTextHashCode(mValues.get(position).hashCode());
+                if (position == INDEX_URL) {
+                    // Save it to avoid detect the gallery
+                    Settings.putClipboardTextHashCode(mValues.get(position).hashCode());
+                }
+
+                showTip(R.string.copied_to_clipboard, LENGTH_SHORT);
             }
-
-            showTip(R.string.copied_to_clipboard, LENGTH_SHORT);
             return true;
         } else {
             return false;

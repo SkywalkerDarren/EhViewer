@@ -27,10 +27,10 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Debug;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.util.LruCache;
 import android.util.Log;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.collection.LruCache;
 import com.getkeepsafe.relinker.ReLinker;
 import com.hippo.a7zip.A7Zip;
 import com.hippo.a7zip.A7ZipExtractLite;
@@ -84,6 +84,7 @@ public class EhApplication extends RecordingApplication {
     private final HashMap<Integer, Object> mGlobalStuffMap = new HashMap<>();
     private EhCookieStore mEhCookieStore;
     private EhClient mEhClient;
+    private EhProxySelector mEhProxySelector;
     private OkHttpClient mOkHttpClient;
     private ImageBitmapHelper mImageBitmapHelper;
     private Conaco<ImageBitmap> mConaco;
@@ -91,8 +92,11 @@ public class EhApplication extends RecordingApplication {
     private SimpleDiskCache mSpiderInfoCache;
     private DownloadManager mDownloadManager;
     private Hosts mHosts;
+    private FavouriteStatusRouter mFavouriteStatusRouter;
 
     private final List<Activity> mActivityList = new ArrayList<>();
+
+    private boolean initialized = false;
 
     public static EhApplication getInstance() {
         return instance;
@@ -102,6 +106,20 @@ public class EhApplication extends RecordingApplication {
     @Override
     public void onCreate() {
         instance = this;
+
+        Thread.UncaughtExceptionHandler handler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            try {
+                // Always save crash file if onCreate() is not done
+                if (!initialized || Settings.getSaveCrashLog()) {
+                    Crash.saveCrashLog(instance, e);
+                }
+            } catch (Throwable ignored) { }
+
+            if (handler != null) {
+                handler.uncaughtException(t, e);
+            }
+        });
 
         super.onCreate();
 
@@ -169,6 +187,8 @@ public class EhApplication extends RecordingApplication {
         if (DEBUG_PRINT_NATIVE_MEMORY || DEBUG_PRINT_IMAGE_COUNT) {
             debugPrint();
         }
+
+        initialized = true;
     }
 
     private void clearTempDir() {
@@ -267,6 +287,15 @@ public class EhApplication extends RecordingApplication {
     }
 
     @NonNull
+    public static EhProxySelector getEhProxySelector(@NonNull Context context) {
+        EhApplication application = ((EhApplication) context.getApplicationContext());
+        if (application.mEhProxySelector == null) {
+            application.mEhProxySelector = new EhProxySelector();
+        }
+        return application.mEhProxySelector;
+    }
+
+    @NonNull
     public static OkHttpClient getOkHttpClient(@NonNull Context context) {
         EhApplication application = ((EhApplication) context.getApplicationContext());
         if (application.mOkHttpClient == null) {
@@ -276,6 +305,7 @@ public class EhApplication extends RecordingApplication {
                     .writeTimeout(10, TimeUnit.SECONDS)
                     .cookieJar(getEhCookieStore(application))
                     .dns(new EhDns(application))
+                    .proxySelector(getEhProxySelector(application))
                     .build();
         }
         return application.mOkHttpClient;
@@ -318,6 +348,12 @@ public class EhApplication extends RecordingApplication {
         if (application.mGalleryDetailCache == null) {
             // Max size 25, 3 min timeout
             application.mGalleryDetailCache = new LruCache<>(25);
+            getFavouriteStatusRouter().addListener((gid, slot) -> {
+                GalleryDetail gd = application.mGalleryDetailCache.get(gid);
+                if (gd != null) {
+                    gd.favoriteSlot = slot;
+                }
+            });
         }
         return application.mGalleryDetailCache;
     }
@@ -330,6 +366,11 @@ public class EhApplication extends RecordingApplication {
                     new File(context.getCacheDir(), "spider_info"), 5 * 1024 * 1024); // 5M
         }
         return application.mSpiderInfoCache;
+    }
+
+    @NonNull
+    public static DownloadManager getDownloadManager() {
+        return getDownloadManager(instance);
     }
 
     @NonNull
@@ -348,6 +389,20 @@ public class EhApplication extends RecordingApplication {
             application.mHosts = new Hosts(application, "hosts.db");
         }
         return application.mHosts;
+    }
+
+    @NonNull
+    public static FavouriteStatusRouter getFavouriteStatusRouter() {
+        return getFavouriteStatusRouter(getInstance());
+    }
+
+    @NonNull
+    public static FavouriteStatusRouter getFavouriteStatusRouter(@NonNull Context context) {
+        EhApplication application = ((EhApplication) context.getApplicationContext());
+        if (application.mFavouriteStatusRouter == null) {
+            application.mFavouriteStatusRouter = new FavouriteStatusRouter();
+        }
+        return application.mFavouriteStatusRouter;
     }
 
     @NonNull

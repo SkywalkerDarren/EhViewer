@@ -31,10 +31,6 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.SwitchCompat;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -48,6 +44,10 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.ehviewer.AppConfig;
 import com.hippo.ehviewer.BuildConfig;
@@ -59,6 +59,7 @@ import com.hippo.ehviewer.gallery.DirGalleryProvider;
 import com.hippo.ehviewer.gallery.EhGalleryProvider;
 import com.hippo.ehviewer.gallery.GalleryProvider2;
 import com.hippo.ehviewer.widget.GalleryGuideView;
+import com.hippo.ehviewer.widget.GalleryHeader;
 import com.hippo.ehviewer.widget.ReversibleSeekBar;
 import com.hippo.glgallery.GalleryPageView;
 import com.hippo.glgallery.GalleryProvider;
@@ -369,11 +370,25 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
             case 2:
                 orientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
                 break;
+            case 3:
+                orientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR;
+                break;
         }
         setRequestedOrientation(orientation);
 
         // Screen lightness
         setScreenLightness(Settings.getCustomScreenLightness(), Settings.getScreenLightness());
+
+        // Cutout
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+
+            GalleryHeader galleryHeader = findViewById(R.id.gallery_header);
+            galleryHeader.setOnApplyWindowInsetsListener((v, insets) -> {
+                galleryHeader.setDisplayCutout(insets.getDisplayCutout());
+                return insets;
+            });
+        }
 
         if (Settings.getGuideGallery()) {
             FrameLayout mainLayout = (FrameLayout) ViewUtils.$$(this, R.id.main);
@@ -829,6 +844,9 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
                 case 2:
                     orientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
                     break;
+                case 3:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR;
+                    break;
             }
             setRequestedOrientation(orientation);
             mGalleryView.setLayoutMode(layoutMode);
@@ -1023,6 +1041,7 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
 
                 switch (which) {
                     case 0: // Refresh
+                        mGalleryProvider.removeCache(page);
                         mGalleryProvider.forceRequest(page);
                         break;
                     case 1: // Share
